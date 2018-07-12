@@ -25,7 +25,7 @@ class StoreNewsRequest extends FormRequest
     {
         return [
             'title' => 'required|string|min:3|max:255',
-            'excerpt' => 'required|string|min:3|max:255',
+
             'body' => 'required|string|min:3|max:255',
 
         ];

@@ -29,21 +29,21 @@
             </tr>
             </thead>
             <tbody>
-            @forelse($news_articles as $n)
+            @forelse($news_articles as $news_article)
 
                 <tr>
-                    <th scope="col">{{$n->parent->id}}</th>
-                    <td> {{$n->title}}</td>
-                    <td>{{$n->parent->status}}</td>
-                    <td>{{ date('F d, Y', strtotime($n->created_at)) }}</td>
+                    <th scope="col">{{$news_article->parent->id}}</th>
+                    <td> {{$news_article->title}}</td>
+                    <td>{{$news_article->parent->status}}</td>
+                    <td>{{ date('F d, Y', strtotime($news_article->created_at)) }}</td>
                     <td>
 
                     </td>
                     <td>
-                        <a class="btn btn-info" href="{{route('news.show', $n->parent->id)}}">{{ __('buttons.show') }}</a>
-                        <a class="btn btn-primary" href="{{route('news.edit', $n->parent->id)}}">{{ __('buttons.edit') }}</a>
+                        <a class="btn btn-info" href="{{route('news.show', $news_article->parent->id)}}">{{ __('buttons.show') }}</a>
+                        <a class="btn btn-primary" href="{{route('news.edit', $news_article->parent->id)}}">{{ __('buttons.edit') }}</a>
 
-                        <form action="{{route('news.destroy', $n->parent->id)}}" method="POST"
+                        <form action="{{route('news.destroy', $news_article->parent->id)}}" method="POST"
                               style="display: inline-block">
                             {{csrf_field()}}
                             {{method_field('DELETE')}}
