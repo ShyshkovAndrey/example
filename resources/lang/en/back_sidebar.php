@@ -8,7 +8,7 @@ return [
     'roles' => 'Roles',
     'home_page' => 'Home page',
     'static_pages' => 'Static pages',
-    'news' => 'NewsMeta',
+    'news' => 'News',
     'report' => 'Report',
     'reports' => 'Reports',
     'announce' => 'Announce',

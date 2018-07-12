@@ -19,7 +19,7 @@ class Locale
     public function handle($request, Closure $next)
     {
 
-        $raw_locale = Session::get('locale');
+        $raw_locale = session('locale');
 
         if (in_array($raw_locale, Config::get('app.locales'))) {
 

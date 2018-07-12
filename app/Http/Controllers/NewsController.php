@@ -24,9 +24,12 @@ class NewsController extends Controller
         $languages = Language::where('status', 'ACTIVE')->get();
         $language = Language::where('key', $locale)->first();
 
-        $news_articles = NewsArticle::where('lang_id', 1)->orderBy('id')->paginate(10);
+        $news_metas = NewsMeta::with('newsArticles')->orderBy('id')->paginate(10);
 
-        return view('admin.news.index', compact('news_articles', 'locale', 'languages'));
+
+        //$news_articles = NewsArticle::with('parent')->where('lang_id', 1)->orderBy('id')->paginate(10);
+
+        return view('admin.news.index', compact('news_articles', 'locale', 'languages', 'news_metas', 'language'));
     }
 
     /**
@@ -34,10 +37,11 @@ class NewsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create($lang_id=null)
+    public function create()
     {
 
         $languages = Language::where('status', 'ACTIVE')->get();
+
         return view('admin.news.add', compact('languages'));
     }
 
@@ -53,19 +57,13 @@ class NewsController extends Controller
         $languages = Language::where('status', 'ACTIVE')->get();
         $default_lang = $languages->where('default', 1)->first();
 
-
-        $news = NewsMeta::create($request->all());
+        $news_meta = NewsMeta::create($request->all());
         $news_translated = new NewsArticle();
-        $news_translated->meta_id = $news->id;
+        $news_translated->meta_id = $news_meta->id;
         $news_translated->lang_id = $default_lang->id;
         $news_translated->title = $request['title'];
         $news_translated->body = $request['body'];
         $news_translated->save();
-
-
-
-
-
 
         return redirect()->route('news.index')
             ->with('success', 'NewsMeta created successfully');
@@ -79,12 +77,15 @@ class NewsController extends Controller
      */
     public function show($id)
     {
-        $news = NewsMeta::findOrFail($id);
+        $lang_id = 1;
 
-        $news_translated = NewsMeta::where('parent_id', $id);
-        $locales = Config::get('app.locales');
+        $news_meta = NewsMeta::with(['newsArticles' => function ($query) use ($lang_id) {
+            $query->where('lang_id', $lang_id);
+        }])->findOrFail($id);
 
-        return view('admin.news.show', compact('news', 'locales', 'news_translated', 'news1'));
+        $news_article = NewsArticle::where('meta_id', $id)->where('lang_id', $lang_id)->firstOrFail();
+
+        return view('admin.news.show', compact('news_article', 'news_meta'));
     }
 
     /**
@@ -130,7 +131,7 @@ class NewsController extends Controller
 
 
         return redirect()->route('news.index')
-            ->with('success', 'NewsMeta updated successfully');
+            ->with('success', 'News updated successfully');
     }
 
     /**
