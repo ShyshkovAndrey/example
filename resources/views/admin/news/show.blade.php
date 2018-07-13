@@ -3,8 +3,10 @@
 
     <div class="form-group ">
         <h1> Viewing News</h1>
-        <a class="btn btn-primary" href="{{route('news.edit', $news_meta->id)}}">{{ __('buttons.edit') }}</a>
-        <form action="{{route('news.destroy', $news_meta->id)}}" method="POST" class="d-inline-block">
+        <a class="btn btn-primary"
+           href="{{route('news.edit',['id' => $news_meta->id, 'lang_id' => $news_article->lang_id])}}">{{ __('buttons.edit') }}</a>
+        <form action="{{route('news.destroy',['id' => $news_meta->id, 'lang_id' => $news_article->lang_id])}}"
+              method="POST" class="d-inline-block">
             {{csrf_field()}}
             {{method_field('DELETE')}}
             <button type="submit" class="btn btn-danger">

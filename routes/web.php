@@ -32,6 +32,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin'], ], functio
 
     Route::resource('news', 'NewsController');
 
+
     Route::resource('languages', 'LanguageController');
 
     Route::get('invite', 'InviteController@create')->name('invite.create');

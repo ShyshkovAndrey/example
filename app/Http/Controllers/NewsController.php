@@ -20,16 +20,12 @@ class NewsController extends Controller
      */
     public function index()
     {
-        $locale = App::getLocale();
-        $languages = Language::where('status', 'ACTIVE')->get();
-        $language = Language::where('key', $locale)->first();
+
+        $languages = Language::where('status', 'ACTIVE')->where('default', false)->get();
 
         $news_metas = NewsMeta::with('newsArticles')->orderBy('id')->paginate(10);
 
-
-        //$news_articles = NewsArticle::with('parent')->where('lang_id', 1)->orderBy('id')->paginate(10);
-
-        return view('admin.news.index', compact('news_articles', 'locale', 'languages', 'news_metas', 'language'));
+        return view('admin.news.index', compact('news_metas', 'languages'));
     }
 
     /**
@@ -37,114 +33,157 @@ class NewsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(Request $request)
     {
-
-        $languages = Language::where('status', 'ACTIVE')->get();
-
-        return view('admin.news.add', compact('languages'));
+        $id = $request->id;
+        $lang_id = $request->lang_id;
+        $languages = Language::where('status', 'ACTIVE')->where('default', false)->get();
+        return view('admin.news.add', compact('id', 'lang_id', 'languages'));
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function store(StoreNewsRequest $request)
     {
+        $meta_id = $request['id'];
+        $lang_id = $request['lang_id'];
+        if ($meta_id == null) {
+            $languages = Language::where('status', 'ACTIVE')->get();
+            $default_lang = $languages->where('default', 1)->first();
 
-        $languages = Language::where('status', 'ACTIVE')->get();
-        $default_lang = $languages->where('default', 1)->first();
+            $news_meta = NewsMeta::create($request->all());
+            $news_article = new NewsArticle();
+            $news_article->meta_id = $news_meta->id;
+            $news_article->lang_id = $default_lang->id;
+            $news_article->title = $request['title'];
+            $news_article->body = $request['body'];
+            $news_article->save();
 
-        $news_meta = NewsMeta::create($request->all());
-        $news_translated = new NewsArticle();
-        $news_translated->meta_id = $news_meta->id;
-        $news_translated->lang_id = $default_lang->id;
-        $news_translated->title = $request['title'];
-        $news_translated->body = $request['body'];
-        $news_translated->save();
+            return redirect()->route('news.index')
+                ->with('success', 'News created successfully');
+        } else {
 
-        return redirect()->route('news.index')
-            ->with('success', 'NewsMeta created successfully');
+            $news_article = new NewsArticle();
+            $news_article->meta_id = $meta_id;
+            $news_article->lang_id = $lang_id;
+            $news_article->title = $request['title'];
+            $news_article->body = $request['body'];
+            $news_article->save();
+
+            return redirect()->route('news.index')
+                ->with('success', 'News Article created successfully');
+        }
+
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  int $id
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $lang_id = 1;
+
+
+        $lang_id = $request->lang_id;
 
         $news_meta = NewsMeta::with(['newsArticles' => function ($query) use ($lang_id) {
             $query->where('lang_id', $lang_id);
         }])->findOrFail($id);
 
-        $news_article = NewsArticle::where('meta_id', $id)->where('lang_id', $lang_id)->firstOrFail();
+        $news_article = NewsArticle::with('parent')->where('meta_id', $id)->where('lang_id', $lang_id)->firstOrFail();
 
         return view('admin.news.show', compact('news_article', 'news_meta'));
     }
 
+
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
+     * @param  int $id
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
-        $news = NewsMeta::findOrFail($id);
+        $default_lang = Language::where('default', 1)->first();
+        $lang_id = isset($request->lang_id) ? $request->lang_id : $default_lang->id;
+        $languages = Language::where('status', 'ACTIVE')->where('default', false)->get();
+        $news_meta = NewsMeta::findOrFail($id);
+        $news_article = NewsArticle::where('meta_id', $id)->where('lang_id', $lang_id)->first();
 
-        return view('admin.news.edit', compact('news'));
+        return view('admin.news.edit', compact('news_article', 'news_meta', 'lang_id', 'languages'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  \Illuminate\Http\Request $request
+     * @param  int $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(StoreNewsRequest $request, $id)
     {
-        $locales = Config::get('app.locales');
-        $news = NewsMeta::findOrFail($id)->update($request->all());
-        /*foreach ($locales as $locale) {
 
-            if($locale != 'en'){
-                $news_translated = NewsMeta::where('parent_id', $id)->where('locale',$locale)->first();
-                //return dump($news_translated);
+        $lang_id = $request['lang_id'];
 
-                $news_translated->title = $request['title_'.$locale];
-                $news_translated->excerpt = $request['excerpt_'.$locale];
-                $news_translated->body = $request['body_'.$locale];
-                $news_translated->status = $news->status;
-                $news_translated->save();
+        $default_lang = Language::where('status', 'ACTIVE')->where('default', 1)->first();
+        $news_article = NewsArticle::where('meta_id', $id)->where('lang_id', $lang_id)->firstOrFail();
 
-            }
+        if ($lang_id == $default_lang->id) {
 
 
-        }*/
+            NewsMeta::findOrFail($id)->update($request->all());
 
+            $news_article->update($request->all());
 
-        return redirect()->route('news.index')
-            ->with('success', 'News updated successfully');
+            return redirect()->route('news.index')
+                ->with('success', 'News updated successfully');
+        } else {
+
+            $news_article->update($request->all());
+
+            return redirect()->route('news.index')
+                ->with('success', 'News Article updated successfully');
+        }
+
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  int $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        NewsMeta::findOrFail($id)->delete();
+        $lang_id = isset($request['lang_id']) ? $request['lang_id'] : 1;
 
-        return redirect()->route('news.index')
-            ->with('success', 'NewsMeta deleted successfully');
+        $default_lang = Language::where('status', 'ACTIVE')->where('default', 1)->first();
+
+
+        if ($lang_id == $default_lang->id) {
+
+
+            NewsMeta::findOrFail($id)->delete();
+
+            return redirect()->route('news.index')
+                ->with('success', 'NewsMeta deleted successfully');
+        } else {
+            $news_article = NewsArticle::where('meta_id', $id)->where('lang_id', $lang_id)->firstOrFail();
+            $news_article->delete();
+
+            return redirect()->route('news.index')
+                ->with('success', 'NewsArticle deleted successfully');
+        }
+
+
+
     }
 }
